@@ -1,5 +1,6 @@
 const DEFAULT_HISTORY_SETTING = { enabled: true };
 const MAX_DEFINITIONS = 5;
+const PRIMARY_TIMEOUT_MS = 4000;
 
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { word, lang } = request || {};
@@ -14,43 +15,45 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const primary = () => {
     if (!langNorm.startsWith("en")) return Promise.resolve(null);
     const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`;
-    return fetch(url)
+    // dictionaryapi.dev's origin occasionally stalls (Cloudflare 522) without
+    // ever rejecting the fetch
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PRIMARY_TIMEOUT_MS);
+    return fetch(url, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : Promise.resolve(null)))
       .then((json) => parseDictionaryApiResponse(json, term))
-      .catch(() => null);
+      .catch(() => null)
+      .finally(() => clearTimeout(timer));
   };
 
   const fallback = () => {
     console.log("Falling back to DDG lookup");
-    const url = `https://noai.duckduckgo.com/?t=h_&q=define+${encodeURIComponent(term)}&ia=web`;
+    const url = `https://noai.duckduckgo.com/js/spice/dictionary/definition/${encodeURIComponent(term.toLowerCase())}/h1`;
     return fetch(url)
       .then((r) => r.text())
-      .then((html) => {
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const module = doc.querySelector(".module.ia-module--definitions");
-        if (!module) return null;
+      .then((body) => {
+        const match = body.match(
+          /^\s*ddg_spice_dictionary_definition\(([\s\S]*)\);\s*$/,
+        );
+        if (!match || !match[1].trim()) return null;
 
-        const title = module.querySelector(".module__title");
-        const wordText = title ? title.childNodes[0].textContent.trim() : term;
+        const entries = JSON.parse(match[1]);
+        if (!Array.isArray(entries) || !entries.length) return null;
 
         const meanings = [];
-        const defEls = module.querySelectorAll(
-          ".module--definitions__definition",
-        );
-        for (const defEl of defEls) {
-          const def = defEl.textContent.trim();
-          if (!def) continue;
+        for (const entry of entries) {
+          if (!entry.text) continue;
           meanings.push({
-            partOfSpeech: "",
-            definition: capitalize(def),
-            example: null,
+            partOfSpeech: entry.partOfSpeech || "",
+            definition: capitalize(entry.text),
+            example: entry.exampleUses?.[0]?.text || null,
           });
           if (meanings.length >= MAX_DEFINITIONS) break;
         }
         if (!meanings.length) return null;
 
         return {
-          word: wordText,
+          word: entries[0].word || term,
           phoneticText: null,
           audioSrc: null,
           meanings,
