@@ -45,8 +45,8 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
           if (!entry.text) continue;
           meanings.push({
             partOfSpeech: entry.partOfSpeech || "",
-            definition: capitalize(entry.text),
-            example: entry.exampleUses?.[0]?.text || null,
+            definition: capitalize(stripHtml(entry.text)),
+            example: stripHtml(entry.exampleUses?.[0]?.text || "") || null,
           });
           if (meanings.length >= MAX_DEFINITIONS) break;
         }
@@ -81,6 +81,16 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function stripHtml(text) {
+  return text
+    .replace(/<[^>]+>/g, "")
+    .replace(/&(amp|lt|gt|quot|#39);/g, (_, entity) =>
+      ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[entity],
+    )
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
