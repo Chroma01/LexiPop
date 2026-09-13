@@ -1,5 +1,6 @@
 const DEFAULT_LANGUAGE = "en";
 const DEFAULT_TRIGGER_KEY = "none";
+const STATUS_UPDATE_DELAY_MS = 2000;
 let LANGUAGE = DEFAULT_LANGUAGE;
 let TRIGGER_KEY = DEFAULT_TRIGGER_KEY;
 
@@ -59,7 +60,13 @@ function registerPopup(el, parentId = "") {
   const id = String(++POPUP_ID);
   el.dataset.id = id;
   el.dataset.parent = parentId;
-  POPUP_LINKS.set(id, { el, parentId, children: new Set(), cleanup: null });
+  POPUP_LINKS.set(id, {
+    el,
+    parentId,
+    children: new Set(),
+    cleanup: null,
+    cancelLookup: null,
+  });
   if (parentId) {
     POPUP_LINKS.get(parentId)?.children.add(id);
   }
@@ -100,6 +107,7 @@ function pruneSubtree(id, includeSelf = false) {
   if (includeSelf) {
     unlinkFromParent(id);
     node.cleanup?.();
+    node.cancelLookup?.();
     node.el.remove();
     POPUP_LINKS.delete(id);
   } else {
@@ -146,14 +154,26 @@ globalThis.addEventListener("pagehide", removeAllPopups);
  * Retrieve the meaning of a word by sending a message to the background script.
  *
  * @param info {Object} The selection info containing the word and its position.
+ * @param requestId {string} Id used to cancel this lookup if it goes stale.
  * @returns {Promise<any>} A promise that resolves with the meaning data.
  */
-function retrieveMeaning(info) {
+function retrieveMeaning(info, requestId) {
   return browser.runtime.sendMessage({
     word: info.word,
     lang: LANGUAGE,
     time: Date.now(),
+    requestId,
   });
+}
+
+/**
+ * Tell the background script to abandon a lookup that's no longer needed
+ * (its popup was closed or superseded before an answer arrived).
+ *
+ * @param requestId {string} Id of the lookup to cancel.
+ */
+function cancelMeaning(requestId) {
+  browser.runtime.sendMessage({ type: "cancel", requestId }).catch(() => {});
 }
 
 /**
@@ -162,6 +182,7 @@ function retrieveMeaning(info) {
  * @param popupDiv {Object} The popup to update.
  */
 function noMeaningFound(popupDiv) {
+  popupDiv.status.classList.remove("loading");
   popupDiv.heading.textContent = "Sorry";
   popupDiv.status.textContent = "No definition was found.";
   popupDiv.moreInfo.hidden = false;
@@ -187,14 +208,38 @@ function openModal(event) {
   loadPopupAssets()
     .then((assets) => {
       const createdDiv = createDiv(info, parentId, assets);
-      retrieveMeaning(info)
+      const requestId = createdDiv.id;
+
+      const statusTimer = setTimeout(() => {
+        createdDiv.status.textContent = "Still searching…";
+      }, STATUS_UPDATE_DELAY_MS);
+
+      const popupNode = POPUP_LINKS.get(requestId);
+      if (popupNode) {
+        popupNode.cancelLookup = () => {
+          clearTimeout(statusTimer);
+          cancelMeaning(requestId);
+        };
+      }
+
+      retrieveMeaning(info, requestId)
         .then((response) => {
+          clearTimeout(statusTimer);
+          if (popupNode) popupNode.cancelLookup = null;
+          if (!POPUP_LINKS.has(requestId)) return; // popup closed or superseded before the answer arrived
+
           if (!response?.content) {
             return noMeaningFound(createdDiv);
           }
           appendToDiv(createdDiv, response.content);
         })
-        .catch(() => noMeaningFound(createdDiv));
+        .catch(() => {
+          clearTimeout(statusTimer);
+          if (popupNode) popupNode.cancelLookup = null;
+          if (!POPUP_LINKS.has(requestId)) return;
+
+          noMeaningFound(createdDiv);
+        });
     })
     .catch(() => {});
 }
@@ -335,6 +380,7 @@ function createDiv(info, parentId, assets) {
   POPUP_LINKS.get(thisId).cleanup = autoUpdate(anchor, hostDiv, updatePosition);
 
   return {
+    id: thisId,
     heading: headingEl,
     pronunciation: pronunciationEl,
     status: statusEl,

@@ -143,6 +143,20 @@
   color: var(--popup-muted);
 }
 
+.status.loading {
+  animation: lexigo-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes lexigo-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .definitions {
   margin: 0;
   padding-left: 22px;

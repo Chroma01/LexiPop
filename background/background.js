@@ -1,9 +1,20 @@
 const DEFAULT_HISTORY_SETTING = { enabled: true };
 const MAX_DEFINITIONS = 5;
 const PRIMARY_TIMEOUT_MS = 4000;
+const FALLBACK_TIMEOUT_MS = 6000;
+// Primary gets a PRIMARY_PRIORITY_MS headstart as its answers are more complete
+const PRIMARY_PRIORITY_MS = 800;
+
+const ACTIVE_REQUESTS = new Map();
 
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { word, lang } = request || {};
+  if (request?.type === "cancel") {
+    ACTIVE_REQUESTS.get(request.requestId)?.();
+    ACTIVE_REQUESTS.delete(request.requestId);
+    return;
+  }
+
+  const { word, lang, requestId } = request || {};
   const term = (word || "").trim();
   if (!term) {
     sendResponse({ content: null });
@@ -12,12 +23,21 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   const langNorm = (lang || "en").toLowerCase();
 
+  const controllers = {};
+  if (requestId) {
+    ACTIVE_REQUESTS.set(requestId, () => {
+      controllers.primary?.abort();
+      controllers.fallback?.abort();
+    });
+  }
+
   const primary = () => {
     if (!langNorm.startsWith("en")) return Promise.resolve(null);
     const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`;
     // dictionaryapi.dev's origin occasionally stalls (Cloudflare 522) without
     // ever rejecting the fetch
     const controller = new AbortController();
+    controllers.primary = controller;
     const timer = setTimeout(() => controller.abort(), PRIMARY_TIMEOUT_MS);
     return fetch(url, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : Promise.resolve(null)))
@@ -29,7 +49,10 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const fallback = () => {
     console.log("Falling back to DDG lookup");
     const url = `https://noai.duckduckgo.com/js/spice/dictionary/definition/${encodeURIComponent(term.toLowerCase())}/h1`;
-    return fetch(url)
+    const controller = new AbortController();
+    controllers.fallback = controller;
+    const timer = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT_MS);
+    return fetch(url, { signal: controller.signal })
       .then((r) => r.text())
       .then((body) => {
         const match = body.match(
@@ -59,13 +82,41 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
           meanings,
         };
       })
-      .catch(() => null);
+      .catch(() => null)
+      .finally(() => clearTimeout(timer));
   };
 
-  primary()
-    .then((content) => content ?? fallback())
+  const resolveContent = () => {
+    const primaryPromise = primary();
+
+    let fireFallback;
+    const headstart = new Promise((resolve) => {
+      const timer = setTimeout(resolve, PRIMARY_PRIORITY_MS);
+      fireFallback = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+    });
+    primaryPromise.then((content) => {
+      if (!content) fireFallback();
+    });
+    const fallbackPromise = headstart.then(fallback);
+
+    return Promise.race([
+      primaryPromise.then((content) => ({ source: "primary", content })),
+      fallbackPromise.then((content) => ({ source: "fallback", content })),
+    ]).then((first) => {
+      // Whichever answers first wins, unless it came back empty, then wait
+      // for the other one.
+      if (first.content) return first.content;
+      return first.source === "primary" ? fallbackPromise : primaryPromise;
+    });
+  };
+
+  resolveContent()
     .then((content) => {
       sendResponse({ content });
+      if (requestId) ACTIVE_REQUESTS.delete(requestId);
 
       if (content) {
         browser.storage.local.get().then((results) => {
@@ -74,7 +125,10 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       }
     })
-    .catch(() => sendResponse({ content: null }));
+    .catch(() => {
+      sendResponse({ content: null });
+      if (requestId) ACTIVE_REQUESTS.delete(requestId);
+    });
 
   return true;
 });
