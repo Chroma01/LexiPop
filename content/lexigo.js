@@ -427,12 +427,14 @@ function appendToDiv(createdDiv, content) {
       pos.className = "pos";
       pos.textContent = meaning.partOfSpeech;
       item.appendChild(pos);
+      item.appendChild(document.createTextNode(" "));
     }
     item.appendChild(document.createTextNode(meaning.definition));
     if (meaning.example) {
       const example = document.createElement("span");
       example.className = "example";
       example.textContent = meaning.example;
+      item.appendChild(document.createTextNode(" "));
       item.appendChild(example);
     }
     createdDiv.definitions.appendChild(item);

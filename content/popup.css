@@ -172,7 +172,6 @@
 .pos {
   font-style: italic;
   color: var(--popup-muted);
-  margin-right: 4px;
 }
 
 .example {
