@@ -120,4 +120,4 @@ This add-on is signed via AMO *self-distribution* (unlisted). Publishing a new v
 5. Create GitHub release `v<ver>` and upload the **signed** `.xpi` as `lexipop-<ver>.xpi`.
 6. Point `update.json` at the new release asset and push — Firefox picks the update up automatically.
 
-Note: the v3.0.0 release asset is the unsigned placeholder build; replace it with the signed XPI from step 4.
+Note: the v3.0.0 release asset is *currently* the unsigned placeholder build; replace it with the signed XPI from step 4 (and remove this note) once it is uploaded.
