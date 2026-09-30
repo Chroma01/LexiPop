@@ -21,7 +21,7 @@
   }
 }
 
-.kotus-popup {
+.lexipop-popup {
   position: relative;
   background: var(--popup-bg);
   color: var(--popup-text);
@@ -39,7 +39,7 @@
   border-radius: 12px;
 }
 
-.kotus-arrow {
+.lexipop-arrow {
   position: absolute;
   width: 12px;
   height: 12px;
@@ -48,7 +48,7 @@
   box-shadow: 0 0 1px var(--popup-border);
 }
 
-.kotus-container {
+.lexipop-container {
   position: relative;
   background: var(--popup-bg);
   border-radius: inherit;
@@ -144,10 +144,10 @@
 }
 
 .status.loading {
-  animation: kotus-pulse 1.4s ease-in-out infinite;
+  animation: lexipop-pulse 1.4s ease-in-out infinite;
 }
 
-@keyframes kotus-pulse {
+@keyframes lexipop-pulse {
   0%,
   100% {
     opacity: 0.55;

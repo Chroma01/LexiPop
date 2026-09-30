@@ -1,6 +1,6 @@
-# Kotus
+# LexiPop
 
-Kotus is an instant, in-browser dictionary for Firefox.
+LexiPop is an instant, in-browser dictionary for Firefox.
 Whenever you come across an unfamiliar word online, simply double-click it to see its definitions, pronunciation, and an
 option to learn more, without having to leave the page.
 
@@ -38,7 +38,7 @@ launches Firefox with the extension and auto-reloads on save.
 2. Click the speaker icon to hear the word, or "Learn more »" for a full search.
 3. Click anywhere outside the popup, or its × button, to dismiss it.
 
-Settings live under the extension's options page (Add-ons Manager → Kotus → Preferences): language, trigger key, and
+Settings live under the extension's options page (Add-ons Manager → LexiPop → Preferences): language, trigger key, and
 word history (including CSV download and clearing).
 
 ## How it works

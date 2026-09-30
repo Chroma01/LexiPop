@@ -11,7 +11,7 @@ const { computePosition, offset, flip, shift, arrow, autoUpdate } =
   globalThis.FloatingUIDOM;
 
 // Marker attribute identifying popup hosts created by this extension
-const POPUP_HOST_ATTR = "data-kotus-popup";
+const POPUP_HOST_ATTR = "data-lexipop-popup";
 
 // Remove popups orphaned by a previous content-script context
 for (const el of document.querySelectorAll(
@@ -41,7 +41,7 @@ function loadPopupAssets() {
     })
     .catch((error) => {
       POPUP_ASSETS = null;
-      console.error("Kotus: failed to load popup assets", error);
+      console.error("LexiPop: failed to load popup assets", error);
       throw error;
     });
   return POPUP_ASSETS;
@@ -332,7 +332,7 @@ function createDiv(info, parentId, assets) {
   const moreInfoEl = shadow.querySelector(".learn-more");
   const audioEl = shadow.querySelector(".audio");
   const closeBtn = shadow.querySelector(".close-btn");
-  const arrowEl = shadow.querySelector(".kotus-arrow");
+  const arrowEl = shadow.querySelector(".lexipop-arrow");
 
   moreInfoEl.href = `https://search.brave.com/search?q=define+${encodeURIComponent(info.word)}`;
 

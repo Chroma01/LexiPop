@@ -1,7 +1,7 @@
 {
   "browser_specific_settings": {
     "gecko": {
-      "id": "kotus@chroma01",
+      "id": "lexipop@chroma01",
       "data_collection_permissions": {
         "required": ["none"]
       }
@@ -17,23 +17,23 @@
       "js": [
         "content/vendor/floating-ui.core.umd.min.js",
         "content/vendor/floating-ui.dom.umd.min.js",
-        "content/kotus.js"
+        "content/lexipop.js"
       ],
       "run_at": "document_end"
     }
   ],
   "description": "An instantly accessible dictionary right in your browser.",
   "host_permissions": ["https://search.brave.com/*"],
-  "homepage_url": "https://github.com/Chroma01/Lexigo",
+  "homepage_url": "https://github.com/Chroma01/LexiPop",
   "icons": {
-    "16": "icons/lexigo-16.png",
-    "32": "icons/lexigo-32.png",
-    "48": "icons/lexigo-48.png",
-    "64": "icons/lexigo-64.png",
-    "128": "icons/lexigo-128.png"
+    "16": "icons/lexipop-16.png",
+    "32": "icons/lexipop-32.png",
+    "48": "icons/lexipop-48.png",
+    "64": "icons/lexipop-64.png",
+    "128": "icons/lexipop-128.png"
   },
   "manifest_version": 3,
-  "name": "Kotus",
+  "name": "LexiPop",
   "options_ui": {
     "page": "options/options.html"
   },
