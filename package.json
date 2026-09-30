@@ -11,14 +11,19 @@
     "prettier": "3.9.6",
     "web-ext": "^10.6.0"
   },
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "web-ext --config=web-ext.config.mjs run",
-    "build": "web-ext --config=web-ext.config.mjs build --overwrite-dest",
+    "build": "node scripts/vendor.mjs && web-ext --config=web-ext.config.mjs build --overwrite-dest",
+    "vendor": "node scripts/vendor.mjs",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "lint:ext": "web-ext --config=web-ext.config.mjs lint",
     "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "format:check": "prettier --check .",
     "prepare": "npm run lint && npm run format && npm run lint:ext"
   }
 }

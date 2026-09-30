@@ -49,22 +49,55 @@ dictionary card provides the word, phonetics, pronunciation audio, and part-of-s
 in parallel and the first complete answer wins. Requests are sent only to those services, and only when you trigger
 them; the extension collects no data (word history is stored locally in your browser and never leaves it).
 
-## Development
+## Building from source (reproducible)
 
-Prerequisites: Node.js and Firefox.
+This is the exact build that produces the submitted add-on.
 
+**Requirements**
+- Node.js `>= 20.19.0` (tested with v26.x) — install from https://nodejs.org or `nvm install 26`
+- npm `>= 8.0.0` (bundled with Node.js)
+- Firefox (only for `npm run dev`, not for `npm run build`)
+
+**Steps**
 ```bash
-npm install        # install dev tooling (ESLint, Prettier, web-ext)
-npm run dev        # launch Firefox with the extension, auto-reloading on save
-npm run build      # package the extension into web-ext-artifacts/
+git clone https://github.com/Chroma01/LexiPop.git
+cd LexiPop
+npm install          # installs devDependencies (web-ext, eslint, prettier, @floating-ui/*)
+npm run vendor       # copies the pinned floating-ui 1.8.0 UMD bundles into content/vendor/
+npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.0.0.zip
+```
+`npm run build` already invokes the vendor step, so the minimal path is just
+`npm install && npm run build`.
+
+**What the build does**
+- `scripts/vendor.mjs` copies the pre-built, minified UMD bundles
+  `node_modules/@floating-ui/core/dist/floating-ui.core.umd.min.js` and
+  `node_modules/@floating-ui/dom/dist/floating-ui.dom.umd.min.js` into
+  `content/vendor/`. These are the exact npm-published bundles for the pinned
+  versions `@floating-ui/core@1.8.0` and `@floating-ui/dom@1.8.0` (pinned
+  without carets in `package.json`). No bundler, no transpilation of our own
+  code is involved: `background/background.js`, `content/lexipop.js`,
+  `content/popup.html`, `content/popup.css` and `options/options.html` ship
+  exactly as written in this repository.
+- `web-ext build` (config: `web-ext.config.mjs`) then zips the extension root
+  into `web-ext-artifacts/`. It does not transform any source files.
+
+So the only machine-generated files in the add-on are the two floating-ui
+UMD bundles, and they are byte-for-byte the files published by the upstream
+npm packages — verifiable at any time with `npm install && npm run vendor`
+(diffs only ever differ by trailing line-ending style, never by content).
+
+**Verify**
+```bash
+npm run lint:check   # eslint, no fixes
+npm run format:check # prettier
+npm run lint:ext     # web-ext lint (addons-linter, same checks as AMO)
 ```
 
-Quality checks:
+## Development
 
 ```bash
-npm run lint       # ESLint with auto-fix (lint:check to only report)
-npm run format     # Prettier write (format:check to only report)
-npm run lint:ext   # addons-linter, the same validation AMO runs on submission
+npm run dev   # launch Firefox with the extension, auto-reloading on save
 ```
 
 ## Credits
