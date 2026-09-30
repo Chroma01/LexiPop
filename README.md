@@ -75,3 +75,16 @@ by Jort van Leenen ([Lexigo](https://github.com/jortvanleenen/lexigo)). Forked a
 ## License
 
 GPLv3 license. See LICENSE file for details.
+
+## Self-distribution & updates
+
+This add-on is signed via AMO *self-distribution* (unlisted). Publishing a new version:
+
+1. Bump `version` in `manifest.json` (and `web-ext.config.mjs` output if needed).
+2. `npm run build` → `web-ext-artifacts/lexipop-<ver>.zip`.
+3. Submit that zip in the AMO Developer Hub (same add-on → new version → "On your own").
+4. When it is signed, download the signed `.xpi` from the Developer Hub.
+5. Create GitHub release `v<ver>` and upload the **signed** `.xpi` as `lexipop-<ver>.xpi`.
+6. Point `update.json` at the new release asset and push — Firefox picks the update up automatically.
+
+Note: the v3.0.0 release asset is the unsigned placeholder build; replace it with the signed XPI from step 4.
