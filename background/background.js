@@ -47,41 +47,17 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   };
 
   const fallback = () => {
-    console.log("Falling back to DDG lookup");
-    const url = `https://noai.duckduckgo.com/js/spice/dictionary/definition/${encodeURIComponent(term.toLowerCase())}/h1`;
+    console.log("Falling back to Brave Search lookup");
+    const url = `https://search.brave.com/search?q=define+${encodeURIComponent(term)}`;
     const controller = new AbortController();
     controllers.fallback = controller;
     const timer = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT_MS);
-    return fetch(url, { signal: controller.signal })
+    return fetch(url, {
+      signal: controller.signal,
+      headers: { Referer: "https://search.brave.com/" },
+    })
       .then((r) => r.text())
-      .then((body) => {
-        const match = body.match(
-          /^\s*ddg_spice_dictionary_definition\(([\s\S]*)\);\s*$/,
-        );
-        if (!match || !match[1].trim()) return null;
-
-        const entries = JSON.parse(match[1]);
-        if (!Array.isArray(entries) || !entries.length) return null;
-
-        const meanings = [];
-        for (const entry of entries) {
-          if (!entry.text) continue;
-          meanings.push({
-            partOfSpeech: entry.partOfSpeech || "",
-            definition: capitalize(stripHtml(entry.text)),
-            example: stripHtml(entry.exampleUses?.[0]?.text || "") || null,
-          });
-          if (meanings.length >= MAX_DEFINITIONS) break;
-        }
-        if (!meanings.length) return null;
-
-        return {
-          word: entries[0].word || term,
-          phoneticText: null,
-          audioSrc: null,
-          meanings,
-        };
-      })
+      .then((html) => parseBraveCard(html, term))
       .catch(() => null)
       .finally(() => clearTimeout(timer));
   };
@@ -140,11 +116,72 @@ function capitalize(text) {
 function stripHtml(text) {
   return text
     .replace(/<[^>]+>/g, "")
-    .replace(/&(amp|lt|gt|quot|#39);/g, (_, entity) =>
-      ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[entity],
+    .replace(
+      /&(amp|lt|gt|quot|#39);/g,
+      (_, entity) =>
+        ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[entity],
     )
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Parse Brave Search's server-rendered dictionary card ("rh" snippet),
+ * which only appears for "define <word>" queries and carries the word,
+ * its phonetic transcription, and parts of speech with their
+ * definitions. Returns the popup content shape, or null if the card is
+ * absent or empty.
+ */
+function parseBraveCard(html, term) {
+  // Anchor on the snippet id; Svelte class hashes change between builds.
+  const start = html.indexOf('id="rh"');
+  if (start === -1) return null;
+  const end = html.indexOf('class="snippet', start);
+  const card =
+    end === -1 ? html.slice(start, start + 20000) : html.slice(start, end);
+
+  // Sanity check: the card's heading should be the word we asked for.
+  const heading = stripHtml(card.match(/<h5[^>]*>([\s\S]*?)<\/h5>/)?.[1] || "");
+  if (!heading.toLowerCase().startsWith(term.toLowerCase())) {
+    return null;
+  }
+
+  // The phonetic transcription is the first <h6> in the card.
+  const phoneticText =
+    stripHtml(card.match(/<h6[^>]*>([\s\S]*?)<\/h6>/)?.[1] || "") || null;
+
+  // Part-of-speech headings are the bold <h6>s ("desktop-default-semibold"),
+  // each immediately followed by an <ol> of definitions. The phonetic
+  // <h6> is not bold, so it is excluded automatically.
+  const meanings = [];
+  for (const m of card.matchAll(
+    /<h6[^>]*desktop-default-semibold[^>]*>([\s\S]*?)<\/h6>\s*<ol[^>]*>([\s\S]*?)<\/ol>/g,
+  )) {
+    const partOfSpeech = stripHtml(m[1]);
+    if (!partOfSpeech) continue;
+    for (const li of m[2].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)) {
+      const definition = stripHtml(li[1]);
+      if (!definition) continue;
+      meanings.push({
+        partOfSpeech,
+        definition: capitalize(definition),
+        example: null,
+      });
+      if (meanings.length >= MAX_DEFINITIONS) break;
+    }
+    if (meanings.length >= MAX_DEFINITIONS) break;
+  }
+  if (!meanings.length) return null;
+
+  // The card embeds a pronunciation recording; absolute against the host,
+  // HTML-entity-unescaped (&amp; in the query string).
+  const audioSrc =
+    card
+      .match(/<audio[^>]*src="([^"]+)"/)?.[1]
+      ?.replace(/&amp;/g, "&")
+      .replace(/^\/(?!\/)/, "https://search.brave.com/") || null;
+
+  return { word: term, phoneticText, audioSrc, meanings };
 }
 
 /**

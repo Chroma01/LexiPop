@@ -1,15 +1,23 @@
-# Lexigo
+# Kotus
 
-Lexigo is an instant, in-browser dictionary for Firefox.
+Kotus is an instant, in-browser dictionary for Firefox.
 Whenever you come across an unfamiliar word online, simply double-click it to see its definitions, pronunciation, and an
 option to learn more, without having to leave the page.
 
+This is a personal fork of [Lexigo](https://github.com/jortvanleenen/lexigo) (itself derived from
+[Dictionary-Anywhere](https://github.com/meetDeveloper/Dictionary-Anywhere)), kept for my own use after upstream
+maintenance stalled: the fallback dictionary source was switched from DuckDuckGo to Brave Search, which is maintained
+and stable.
+
 ## Installation
 
-[**Get Lexigo on Firefox Add-ons**](https://addons.mozilla.org/en-US/firefox/addon/lexigo/)
+Build it from source and load the packaged XPI, or run straight from this repository:
 
-Alternatively, build it from source ([Development](#development)) and load the packaged zip, or run straight from this
-repository ([GitHub](https://github.com/jortvanleenen/lexigo)) with `npm run dev`.
+1. In Firefox, open [about:debugging#/runtime/this-firefox](about:debugging#/runtime/this-firefox).
+2. Click **Load Temporary Add-on…**: point it at this repository folder, or at the XPI from `web-ext-artifacts/`.
+
+For a permanent install, build the XPI (`npm run build`) and load it via about:addons; for development, `npm run dev`
+launches Firefox with the extension and auto-reloads on save.
 
 ## Features
 
@@ -21,7 +29,7 @@ repository ([GitHub](https://github.com/jortvanleenen/lexigo)) with `npm run dev
 - **Trigger key**: optionally require holding Ctrl, Alt, or Shift (Command on macOS) while double-clicking, so popups
   only appear when you want them.
 - **Word history**: optionally store every word you look up, view the count in the options page, and export it as CSV.
-- **Learn more**: every popup links to a full web search for the word.
+- **Learn more**: every popup links to a full Brave Search for the word.
 - **Dark mode**: the popup and options page follow your system color scheme.
 
 ## Usage
@@ -30,14 +38,16 @@ repository ([GitHub](https://github.com/jortvanleenen/lexigo)) with `npm run dev
 2. Click the speaker icon to hear the word, or "Learn more »" for a full search.
 3. Click anywhere outside the popup, or its × button, to dismiss it.
 
-Settings live under the extension's options page (Add-ons Manager → Lexigo → Preferences): language, trigger key, and
+Settings live under the extension's options page (Add-ons Manager → Kotus → Preferences): language, trigger key, and
 word history (including CSV download and clearing).
 
 ## How it works
 
-Definitions come from the free [Dictionary API](https://dictionaryapi.dev/), with a DuckDuckGo fallback for words it
-doesn't know. Lookups are sent only to those services and only when you trigger them; the extension collects no data
-(word history is stored locally in your browser and never leaves it).
+Definitions come from the free [Dictionary API](https://dictionaryapi.dev/) as the primary source, with a
+[Brave Search](https://search.brave.com/) fallback for words it doesn't know — Brave's server-rendered "define"
+dictionary card provides the word, phonetics, pronunciation audio, and part-of-speech groupings. Both lookups run
+in parallel and the first complete answer wins. Requests are sent only to those services, and only when you trigger
+them; the extension collects no data (word history is stored locally in your browser and never leaves it).
 
 ## Development
 
@@ -59,7 +69,8 @@ npm run lint:ext   # addons-linter, the same validation AMO runs on submission
 
 ## Credits
 
-Original work by meetDeveloper ([GitHub Repository](https://github.com/meetDeveloper/Dictionary-Anywhere)).
+Original work by meetDeveloper ([Dictionary-Anywhere](https://github.com/meetDeveloper/Dictionary-Anywhere)), continued
+by Jort van Leenen ([Lexigo](https://github.com/jortvanleenen/lexigo)). Forked and maintained by Chroma01.
 
 ## License
 

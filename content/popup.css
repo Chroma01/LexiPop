@@ -21,7 +21,7 @@
   }
 }
 
-.lexigo-popup {
+.kotus-popup {
   position: relative;
   background: var(--popup-bg);
   color: var(--popup-text);
@@ -39,7 +39,7 @@
   border-radius: 12px;
 }
 
-.lexigo-arrow {
+.kotus-arrow {
   position: absolute;
   width: 12px;
   height: 12px;
@@ -48,7 +48,7 @@
   box-shadow: 0 0 1px var(--popup-border);
 }
 
-.lexigo-container {
+.kotus-container {
   position: relative;
   background: var(--popup-bg);
   border-radius: inherit;
@@ -144,10 +144,10 @@
 }
 
 .status.loading {
-  animation: lexigo-pulse 1.4s ease-in-out infinite;
+  animation: kotus-pulse 1.4s ease-in-out infinite;
 }
 
-@keyframes lexigo-pulse {
+@keyframes kotus-pulse {
   0%,
   100% {
     opacity: 0.55;

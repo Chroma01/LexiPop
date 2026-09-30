@@ -11,7 +11,7 @@ const { computePosition, offset, flip, shift, arrow, autoUpdate } =
   globalThis.FloatingUIDOM;
 
 // Marker attribute identifying popup hosts created by this extension
-const POPUP_HOST_ATTR = "data-lexigo-popup";
+const POPUP_HOST_ATTR = "data-kotus-popup";
 
 // Remove popups orphaned by a previous content-script context
 for (const el of document.querySelectorAll(
@@ -41,7 +41,7 @@ function loadPopupAssets() {
     })
     .catch((error) => {
       POPUP_ASSETS = null;
-      console.error("Lexigo: failed to load popup assets", error);
+      console.error("Kotus: failed to load popup assets", error);
       throw error;
     });
   return POPUP_ASSETS;
@@ -332,10 +332,9 @@ function createDiv(info, parentId, assets) {
   const moreInfoEl = shadow.querySelector(".learn-more");
   const audioEl = shadow.querySelector(".audio");
   const closeBtn = shadow.querySelector(".close-btn");
-  const arrowEl = shadow.querySelector(".lexigo-arrow");
+  const arrowEl = shadow.querySelector(".kotus-arrow");
 
-  const ddgLang = LANGUAGE === "en" ? "us-en" : LANGUAGE;
-  moreInfoEl.href = `https://noai.duckduckgo.com/search?kl=${ddgLang}&q=define+${encodeURIComponent(info.word)}`;
+  moreInfoEl.href = `https://search.brave.com/search?q=define+${encodeURIComponent(info.word)}`;
 
   closeBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
