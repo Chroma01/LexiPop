@@ -5,9 +5,9 @@ Whenever you come across an unfamiliar word online, simply double-click it to se
 option to learn more, without having to leave the page.
 
 This is a personal fork of [Lexigo](https://github.com/jortvanleenen/lexigo) (itself derived from
-[Dictionary-Anywhere](https://github.com/meetDeveloper/Dictionary-Anywhere)), kept for my own use after upstream
-maintenance stalled: the fallback dictionary source was switched from DuckDuckGo to Brave Search, which is maintained
-and stable.
+[Dictionary-Anywhere](https://github.com/meetDeveloper/Dictionary-Anywhere)), kept and maintained by me so I can
+decide its own features: upstream development has stalled, and good dictionary add-ons are few and far between. The
+fallback dictionary source was also switched to Brave Search, which is maintained and stable.
 
 ## Installation
 
