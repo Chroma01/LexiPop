@@ -1,0 +1,12 @@
+{
+  "addons": {
+    "lexipop@chroma01": {
+      "updates": [
+        {
+          "update_link": "https://github.com/Chroma01/LexiPop/releases/download/v3.0.0/lexipop-3.0.0.xpi",
+          "application_version": ">=115.0"
+        }
+      ]
+    }
+  }
+}
