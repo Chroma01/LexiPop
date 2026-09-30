@@ -6,8 +6,7 @@ option to learn more, without having to leave the page.
 
 This is a personal fork of [Lexigo](https://github.com/jortvanleenen/lexigo) (itself derived from
 [Dictionary-Anywhere](https://github.com/meetDeveloper/Dictionary-Anywhere)). The original project stopped
-receiving updates, so I keep this fork of my own: I decide the features myself and can fix things when they
-break — good dictionary add-ons are few and far between. The fallback dictionary source was also switched to
+receiving updates, so this fork continues its development. The fallback dictionary source was also switched to
 Brave Search, which is maintained and stable.
 
 ## Installation
