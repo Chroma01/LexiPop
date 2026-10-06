@@ -7,7 +7,7 @@ option to learn more, without having to leave the page.
 This is a personal fork of [Lexigo](https://github.com/jortvanleenen/lexigo) (itself derived from
 [Dictionary-Anywhere](https://github.com/meetDeveloper/Dictionary-Anywhere)). The original project stopped
 receiving updates, so this fork continues its development. The fallback dictionary source was also switched to
-Brave Search, which is maintained and stable.
+[English Wiktionary](https://en.wiktionary.org/), which is maintained and covers essentially every English word.
 
 ## Installation
 
@@ -29,7 +29,7 @@ launches Firefox with the extension and auto-reloads on save.
 - **Trigger key**: optionally require holding Ctrl, Alt, or Shift (Command on macOS) while double-clicking, so popups
   only appear when you want them.
 - **Word history**: optionally store every word you look up, view the count in the options page, and export it as CSV.
-- **Learn more**: every popup links to a full Brave Search for the word.
+- **Learn more**: every popup links to the full Wiktionary article for the word.
 - **Dark mode**: the popup and options page follow your system color scheme.
 
 ## Usage
@@ -43,33 +43,39 @@ word history (including CSV download and clearing).
 
 ## How it works
 
-Definitions come from the free [Dictionary API](https://dictionaryapi.dev/) as the primary source, with a
-[Brave Search](https://search.brave.com/) fallback for words it doesn't know — Brave's server-rendered "define"
-dictionary card provides the word, phonetics, pronunciation audio, and part-of-speech groupings. Both lookups run
-in parallel and the first complete answer wins. Requests are sent only to those services, and only when you trigger
-them; the extension collects no data (word history is stored locally in your browser and never leaves it).
+Definitions come from the free [Dictionary API](https://dictionaryapi.dev/) as the primary source, with
+[English Wiktionary](https://en.wiktionary.org/) as the fallback for words it doesn't know. Wiktionary is a
+free, collaboratively edited dictionary (Wikimedia project) whose rendered HTML is stable and semantic, so the
+fallback can reliably extract the word's IPA transcription, a recorded pronunciation, and part-of-speech-grouped
+definitions for essentially every English word. Both lookups run in parallel and the first complete answer wins.
+Requests are sent only to those services, and only when you trigger them; the extension collects no data (word
+history is stored locally in your browser and never leaves it).
 
 ## Building from source (reproducible)
 
 This is the exact build that produces the submitted add-on.
 
 **Requirements**
+
 - Node.js `>= 20.19.0` (tested with v26.x) — install from https://nodejs.org or `nvm install 26`
 - npm `>= 8.0.0` (bundled with Node.js)
 - Firefox (only for `npm run dev`, not for `npm run build`)
 
 **Steps**
+
 ```bash
 git clone https://github.com/Chroma01/LexiPop.git
 cd LexiPop
 npm install          # installs devDependencies (web-ext, eslint, prettier, @floating-ui/*)
 npm run vendor       # copies the pinned floating-ui 1.8.0 UMD bundles into content/vendor/
-npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.0.0.zip
+npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.1.0.zip
 ```
+
 `npm run build` already invokes the vendor step, so the minimal path is just
 `npm install && npm run build`.
 
 **What the build does**
+
 - `scripts/vendor.mjs` copies the pre-built, minified UMD bundles
   `node_modules/@floating-ui/core/dist/floating-ui.core.umd.min.js` and
   `node_modules/@floating-ui/dom/dist/floating-ui.dom.umd.min.js` into
@@ -88,6 +94,7 @@ npm packages — verifiable at any time with `npm install && npm run vendor`
 (diffs only ever differ by trailing line-ending style, never by content).
 
 **Verify**
+
 ```bash
 npm run lint:check   # eslint, no fixes
 npm run format:check # prettier
@@ -111,7 +118,7 @@ GPLv3 license. See LICENSE file for details.
 
 ## Self-distribution & updates
 
-This add-on is signed via AMO *self-distribution* (unlisted). Publishing a new version:
+This add-on is signed via AMO _self-distribution_ (unlisted). Publishing a new version:
 
 1. Bump `version` in `manifest.json` (and `web-ext.config.mjs` output if needed).
 2. `npm run build` → `web-ext-artifacts/lexipop-<ver>.zip`.
@@ -121,4 +128,4 @@ This add-on is signed via AMO *self-distribution* (unlisted). Publishing a new v
 6. Point `update.json` at the new release asset and push — Firefox picks the update up automatically.
 
 Signed releases live in the GitHub Releases section; the current signed
-3.0.0 build is the v3.0.0 release asset.
+build is the v3.1.0 release asset (Wiktionary fallback backend).

@@ -11,10 +11,9 @@
     <path d="M108 24 L116 18"/>
   </g>
   <g fill="#FFFFFF">
-    <rect x="16" y="22" width="78" height="66" rx="16"/>
-    <path d="M38 88 L30 108 L64 88 Z"/>
+    <path d="M32 22 L78 22 Q94 22 94 38 L94 72 Q94 88 78 88 L64 88 L30 108 L38 88 L32 88 Q16 88 16 72 L16 38 Q16 22 32 22 Z"/>
   </g>
-  <g stroke="#0D2F86" stroke-width="14" stroke-linecap="round" fill="none">
-    <path d="M42 38 L42 66 L70 66"/>
+  <g stroke="#0D2F86" stroke-width="15" stroke-linecap="round" fill="none">
+    <path d="M45 32 L45 76 L77 76"/>
   </g>
 </svg>

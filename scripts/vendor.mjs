@@ -12,8 +12,14 @@ const dest = join(root, "content", "vendor");
 mkdirSync(dest, { recursive: true });
 
 const files = [
-  ["@floating-ui/core/dist/floating-ui.core.umd.min.js", "floating-ui.core.umd.min.js"],
-  ["@floating-ui/dom/dist/floating-ui.dom.umd.min.js", "floating-ui.dom.umd.min.js"],
+  [
+    "@floating-ui/core/dist/floating-ui.core.umd.min.js",
+    "floating-ui.core.umd.min.js",
+  ],
+  [
+    "@floating-ui/dom/dist/floating-ui.dom.umd.min.js",
+    "floating-ui.dom.umd.min.js",
+  ],
 ];
 
 for (const [src, name] of files) {

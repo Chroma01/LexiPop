@@ -47,17 +47,14 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   };
 
   const fallback = () => {
-    console.log("Falling back to Brave Search lookup");
-    const url = `https://search.brave.com/search?q=define+${encodeURIComponent(term)}`;
+    console.log("Falling back to Wiktionary lookup");
+    const url = `https://en.wiktionary.org/wiki/${encodeURIComponent(term)}`;
     const controller = new AbortController();
     controllers.fallback = controller;
     const timer = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT_MS);
-    return fetch(url, {
-      signal: controller.signal,
-      headers: { Referer: "https://search.brave.com/" },
-    })
+    return fetch(url, { signal: controller.signal })
       .then((r) => r.text())
-      .then((html) => parseBraveCard(html, term))
+      .then((html) => parseWiktionary(html, term))
       .catch(() => null)
       .finally(() => clearTimeout(timer));
   };
@@ -113,73 +110,109 @@ function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function stripHtml(text) {
-  return text
-    .replace(/<[^>]+>/g, "")
-    .replace(
-      /&(amp|lt|gt|quot|#39);/g,
-      (_, entity) =>
-        ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[entity],
-    )
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 /**
- * Parse Brave Search's server-rendered dictionary card ("rh" snippet),
- * which only appears for "define <word>" queries and carries the word,
- * its phonetic transcription, and parts of speech with their
- * definitions. Returns the popup content shape, or null if the card is
- * absent or empty.
+ * Parse an English Wiktionary page. Wiktionary is used as the fallback
+ * dictionary: unlike search-engine dictionary cards it renders a stable,
+ * semantic HTML structure (Wikimedia markup) for essentially every English
+ * word, and provides IPA transcriptions, pronunciation audio, and
+ * part-of-speech-grouped definitions.
+ *
+ * The word's English section runs from the "English" h2 to the next h2;
+ * inside it, part-of-speech headings appear at either the h3 or the h4
+ * level (words with multiple etymologies nest them under an
+ * "Etymology N" subsection), so both levels are considered. Returns the
+ * popup content shape, or null if no definitions are present.
  */
-function parseBraveCard(html, term) {
-  // Anchor on the snippet id; Svelte class hashes change between builds.
-  const start = html.indexOf('id="rh"');
-  if (start === -1) return null;
-  const end = html.indexOf('class="snippet', start);
-  const card =
-    end === -1 ? html.slice(start, start + 20000) : html.slice(start, end);
+function parseWiktionary(html, term) {
+  const engOpen = html.indexOf('id="English"');
+  if (engOpen === -1) return null;
+  // Start at the opening <div> of the "English" heading container.
+  const start = html.lastIndexOf("<div", engOpen);
+  const afterTag = html.indexOf(">", engOpen) + 1;
+  const nextH2 = html.indexOf("<h2", afterTag);
+  const englishHtml =
+    nextH2 === -1 ? html.slice(start) : html.slice(start, nextH2);
 
-  // Sanity check: the card's heading should be the word we asked for.
-  const heading = stripHtml(card.match(/<h5[^>]*>([\s\S]*?)<\/h5>/)?.[1] || "");
-  if (!heading.toLowerCase().startsWith(term.toLowerCase())) {
-    return null;
+  // Re-parse the section into a detached document for querySelector.
+  // (DOMParser instead of a dynamic innerHTML assignment, which the
+  // addons linter flags as unsafe.)
+  const container = new DOMParser().parseFromString(
+    englishHtml,
+    "text/html",
+  ).body;
+
+  // First IPA transcription in the section.
+  const phoneticText =
+    (container.querySelector("span.IPA") || {}).textContent?.trim() || null;
+
+  // First recorded pronunciation; protocol-relative URLs are made absolute.
+  let audioSrc = null;
+  const srcEl = container.querySelector('source[src*="upload.wikimedia"]');
+  if (srcEl) {
+    const src = srcEl.getAttribute("src");
+    if (src) audioSrc = src.replace(/^\/\//, "https://");
   }
 
-  // The phonetic transcription is the first <h6> in the card.
-  const phoneticText =
-    stripHtml(card.match(/<h6[^>]*>([\s\S]*?)<\/h6>/)?.[1] || "") || null;
+  // Part-of-speech heading titles, at either nesting level.
+  const POS = new Set([
+    "Noun",
+    "Proper noun",
+    "Verb",
+    "Adjective",
+    "Adverb",
+    "Pronoun",
+    "Determiner",
+    "Preposition",
+    "Postposition",
+    "Conjunction",
+    "Interjection",
+    "Article",
+    "Numeral",
+    "Prefix",
+    "Suffix",
+    "Root",
+    "Exclamation",
+  ]);
 
-  // Part-of-speech headings are the bold <h6>s ("desktop-default-semibold"),
-  // each immediately followed by an <ol> of definitions. The phonetic
-  // <h6> is not bold, so it is excluded automatically.
   const meanings = [];
-  for (const m of card.matchAll(
-    /<h6[^>]*desktop-default-semibold[^>]*>([\s\S]*?)<\/h6>\s*<ol[^>]*>([\s\S]*?)<\/ol>/g,
-  )) {
-    const partOfSpeech = stripHtml(m[1]);
-    if (!partOfSpeech) continue;
-    for (const li of m[2].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)) {
-      const definition = stripHtml(li[1]);
+  for (const heading of container.querySelectorAll(".mw-heading")) {
+    const h = heading.querySelector("h2, h3, h4");
+    if (!h) continue;
+    const partOfSpeech = h.textContent.trim();
+    if (!POS.has(partOfSpeech)) continue;
+
+    // The section body is the run of siblings up to the next heading.
+    let sib = heading.nextElementSibling;
+    const wrap = document.createElement("div");
+    while (sib && !sib.classList.contains("mw-heading")) {
+      wrap.appendChild(sib.cloneNode(true));
+      sib = sib.nextElementSibling;
+    }
+
+    const list = wrap.querySelector("ol") || wrap.querySelector("ul");
+    if (!list) continue;
+
+    for (const li of list.children) {
+      if (li.tagName !== "LI") continue;
+      const exDiv = li.querySelector(".h-usage-example");
+      const example = exDiv
+        ? exDiv.textContent.replace(/\s+/g, " ").trim()
+        : null;
+      // Nested <dl>s carry synonyms/translations, not the definition.
+      const clone = li.cloneNode(true);
+      clone.querySelectorAll("dl").forEach((d) => d.remove());
+      const definition = clone.textContent.replace(/\s+/g, " ").trim();
       if (!definition) continue;
       meanings.push({
         partOfSpeech,
         definition: capitalize(definition),
-        example: null,
+        example,
       });
       if (meanings.length >= MAX_DEFINITIONS) break;
     }
     if (meanings.length >= MAX_DEFINITIONS) break;
   }
   if (!meanings.length) return null;
-
-  // The card embeds a pronunciation recording; absolute against the host,
-  // HTML-entity-unescaped (&amp; in the query string).
-  const audioSrc =
-    card
-      .match(/<audio[^>]*src="([^"]+)"/)?.[1]
-      ?.replace(/&amp;/g, "&")
-      .replace(/^\/(?!\/)/, "https://search.brave.com/") || null;
 
   return { word: term, phoneticText, audioSrc, meanings };
 }

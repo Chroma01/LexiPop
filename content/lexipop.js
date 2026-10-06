@@ -334,7 +334,7 @@ function createDiv(info, parentId, assets) {
   const closeBtn = shadow.querySelector(".close-btn");
   const arrowEl = shadow.querySelector(".lexipop-arrow");
 
-  moreInfoEl.href = `https://search.brave.com/search?q=define+${encodeURIComponent(info.word)}`;
+  moreInfoEl.href = `https://en.wiktionary.org/wiki/${encodeURIComponent(info.word)}`;
 
   closeBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
