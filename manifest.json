@@ -39,7 +39,7 @@
   },
   "permissions": ["storage"],
   "update_url": "https://raw.githubusercontent.com/Chroma01/LexiPop/main/update.json",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "web_accessible_resources": [
     {
       "resources": ["content/popup.html", "content/popup.css"],
