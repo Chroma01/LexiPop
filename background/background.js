@@ -198,9 +198,11 @@ function parseWiktionary(html, term) {
       const example = exDiv
         ? exDiv.textContent.replace(/\s+/g, " ").trim()
         : null;
-      // Nested <dl>s carry synonyms/translations, not the definition.
+      // Nested <dl>s carry examples/synonyms/translations and nested
+      // <ul>s carry citations (source + quotation blocks); neither is
+      // part of the definition itself.
       const clone = li.cloneNode(true);
-      clone.querySelectorAll("dl").forEach((d) => d.remove());
+      clone.querySelectorAll("dl, ul").forEach((el) => el.remove());
       const definition = clone.textContent.replace(/\s+/g, " ").trim();
       if (!definition) continue;
       meanings.push({
