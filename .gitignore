@@ -4,3 +4,4 @@ node_modules
 web-ext-artifacts
 signed/
 lexipop-*-source.zip
+clean.xpi
