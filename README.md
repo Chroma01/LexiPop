@@ -68,7 +68,7 @@ git clone https://github.com/Chroma01/LexiPop.git
 cd LexiPop
 npm install          # installs devDependencies (web-ext, eslint, prettier, @floating-ui/*)
 npm run vendor       # copies the pinned floating-ui 1.8.0 UMD bundles into content/vendor/
-npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.1.2.zip
+npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.1.3.zip
 ```
 
 `npm run build` already invokes the vendor step, so the minimal path is just
@@ -128,4 +128,4 @@ This add-on is signed via AMO _self-distribution_ (unlisted). Publishing a new v
 6. Point `update.json` at the new release asset and push — Firefox picks the update up automatically.
 
 Signed releases live in the GitHub Releases section; the current signed
-build is the v3.1.2 release asset (Wiktionary fallback backend).
+build is the v3.1.3 release asset (Wiktionary fallback backend).

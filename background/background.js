@@ -48,15 +48,32 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   const fallback = () => {
     console.log("Falling back to Wiktionary lookup");
-    const url = `https://en.wiktionary.org/wiki/${encodeURIComponent(term)}`;
     const controller = new AbortController();
     controllers.fallback = controller;
     const timer = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT_MS);
-    return fetch(url, { signal: controller.signal })
-      .then((r) => r.text())
-      .then((html) => parseWiktionary(html, term))
-      .catch(() => null)
-      .finally(() => clearTimeout(timer));
+    // Wiktionary titles are case-sensitive and most lemmas are
+    // lowercase, so try the term as typed first (keeps proper nouns like
+    // "London" working), then with the first letter lowercased
+    // ("Official" -> "official").
+    const candidates = [term];
+    const lowered = term.charAt(0).toLowerCase() + term.slice(1);
+    if (lowered !== term) candidates.push(lowered);
+    const run = (async () => {
+      for (const candidate of candidates) {
+        const url = `https://en.wiktionary.org/wiki/${encodeURIComponent(candidate)}`;
+        try {
+          const r = await fetch(url, { signal: controller.signal });
+          if (!r.ok) continue;
+          const html = await r.text();
+          const content = parseWiktionary(html, term);
+          if (content) return content;
+        } catch {
+          if (controller.signal.aborted) return null;
+        }
+      }
+      return null;
+    })();
+    return run.finally(() => clearTimeout(timer));
   };
 
   const resolveContent = () => {
