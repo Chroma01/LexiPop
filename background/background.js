@@ -220,6 +220,7 @@ function parseWiktionary(html, term) {
       // part of the definition itself.
       const clone = li.cloneNode(true);
       clone.querySelectorAll("dl, ul").forEach((el) => el.remove());
+      clone.querySelectorAll("style, script").forEach((el) => el.remove());
       const definition = clone.textContent.replace(/\s+/g, " ").trim();
       if (!definition) continue;
       meanings.push({
