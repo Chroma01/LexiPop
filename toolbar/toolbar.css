@@ -28,6 +28,7 @@
 
 html {
   width: 360px;
+  overflow-x: hidden;
 }
 
 body {
@@ -77,8 +78,18 @@ body {
 .body {
   margin-top: 10px;
   max-height: 20rem;
+  /* overflow-x must be explicit: overflow-y:auto would otherwise compute
+     overflow-x to auto and show a horizontal scrollbar for any wide token
+     (long URLs, unbreakable words) inside the results box. */
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 8px;
+}
+
+.definitions li,
+.example,
+.status {
+  overflow-wrap: anywhere;
 }
 
 /* Firefox honors the webkit scrollbar pseudo-elements, and this passes
