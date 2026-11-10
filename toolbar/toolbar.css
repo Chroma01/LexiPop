@@ -1,3 +1,9 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   --popup-bg: #f8f9fa;
   --popup-text: #101418;
@@ -26,6 +32,7 @@ html {
 
 body {
   margin: 0;
+  width: 100%;
   background: var(--popup-bg);
   color: var(--popup-text);
   font-family:
@@ -40,27 +47,53 @@ body {
 }
 
 #search {
-  box-sizing: border-box;
+  display: block;
   width: 100%;
   margin: 0;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border: 1px solid var(--popup-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--field-bg);
   color: var(--popup-text);
   font: inherit;
-  outline-offset: 2px;
 }
 
 #search:focus-visible {
-  outline: 2px solid var(--popup-accent);
+  outline: 2px solid color-mix(in srgb, var(--popup-accent) 55%, transparent);
+  outline-offset: 1px;
+  border-color: var(--popup-accent);
+}
+
+.hint {
+  margin: 10px 2px 0;
+  color: var(--popup-muted);
+  font-size: 12px;
+}
+
+.hint[hidden] {
+  display: none;
 }
 
 .body {
   margin-top: 10px;
-  max-height: 22rem;
+  max-height: 20rem;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 8px;
+}
+
+/* Firefox honors the webkit scrollbar pseudo-elements, and this passes
+   the project's strict baseline lint (scrollbar-width/color does not). */
+.body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.body::-webkit-scrollbar-thumb {
+  background: var(--popup-border);
+  border-radius: 4px;
+}
+
+.body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .body[hidden] {

@@ -3,6 +3,7 @@ const STATUS_UPDATE_DELAY_MS = 2000;
 
 const searchEl = document.getElementById("search");
 const resultEl = document.getElementById("result");
+const hintEl = document.getElementById("hint");
 const headingEl = resultEl.querySelector(".heading");
 const pronunciationEl = resultEl.querySelector(".pronunciation");
 const statusEl = resultEl.querySelector(".status");
@@ -46,6 +47,8 @@ function clearResult() {
   definitionsEl.hidden = true;
   moreInfoEl.hidden = true;
   audioEl.hidden = true;
+  // The hint belongs to the truly empty state only.
+  hintEl.hidden = searchEl.value.trim() !== "";
 }
 
 /**
@@ -125,6 +128,7 @@ function lookup(term) {
   cancelActive();
   ACTIVE_ID += 1;
   const id = String(ACTIVE_ID);
+  hintEl.hidden = true;
 
   showStatus("Please wait…", true);
   STATUS_TIMER = setTimeout(() => {
