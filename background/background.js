@@ -7,6 +7,30 @@ const PRIMARY_PRIORITY_MS = 800;
 
 const ACTIVE_REQUESTS = new Map();
 
+// Selection context menu: a right-clicked word is looked up through the
+// content script, opening the same in-page popup as a double-click.
+const LOOKUP_MENU_ID = "lexipop-lookup";
+browser.contextMenus.removeAll().then(() =>
+  browser.contextMenus.create({
+    id: LOOKUP_MENU_ID,
+    title: "Look up “%s” in LexiPop",
+    contexts: ["selection"],
+  }),
+);
+
+browser.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== LOOKUP_MENU_ID || !tab?.id) {
+    return;
+  }
+  const word = (info.selectionText || "").trim();
+  if (word.length <= 1) {
+    return;
+  }
+  browser.tabs
+    .sendMessage(tab.id, { type: "contextLookup", word, x: info.x, y: info.y })
+    .catch(() => {});
+});
+
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request?.type === "cancel") {
     ACTIVE_REQUESTS.get(request.requestId)?.();

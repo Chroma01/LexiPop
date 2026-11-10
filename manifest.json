@@ -7,6 +7,10 @@
       }
     }
   },
+  "action": {
+    "default_popup": "toolbar/toolbar.html",
+    "default_title": "LexiPop — look up word meanings"
+  },
   "author": "Chroma01",
   "background": {
     "scripts": ["background/background.js"]
@@ -37,9 +41,9 @@
   "options_ui": {
     "page": "options/options.html"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "contextMenus"],
   "update_url": "https://raw.githubusercontent.com/Chroma01/LexiPop/main/update.json",
-  "version": "3.1.4",
+  "version": "3.2.0",
   "web_accessible_resources": [
     {
       "resources": ["content/popup.html", "content/popup.css"],

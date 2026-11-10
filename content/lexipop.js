@@ -189,7 +189,7 @@ function noMeaningFound(popupDiv) {
 }
 
 /**
- * Open a modal popup with the definition of the selected word.
+ * Open a popup with the definition of the selected word.
  *
  * @param event {Event} The event that triggered the popup.
  */
@@ -205,6 +205,49 @@ function openModal(event) {
   }
   const parentId = fromPopup ? fromPopup.dataset.id : "";
 
+  runLookup(info, parentId);
+}
+
+/**
+ * Open a root popup for a term requested outside the page (context menu).
+ * The popup anchors to the live selection when it still matches the term,
+ * otherwise to the point where the menu was opened.
+ *
+ * @param word {string} The term to look up.
+ * @param x {number} Viewport x coordinate where the menu was opened.
+ * @param y {number} Viewport y coordinate where the menu was opened.
+ */
+function openModalAtPoint(word, x, y) {
+  const selection = globalThis.getSelection?.();
+  const live =
+    selection && !selection.isCollapsed && selection.toString().trim() === word
+      ? selection.getRangeAt(0).cloneRange()
+      : null;
+  const range =
+    live || document.caretRangeFromPoint?.(x ?? 0, y ?? 0) || pointRange();
+  removeAllPopups();
+  runLookup({ word, range, clientX: x ?? 0, clientY: y ?? 0 }, "");
+}
+
+/**
+ * A collapsed range at the start of the document, used when the popup has
+ * no better anchor; createAnchor then falls back to the menu coordinates.
+ */
+function pointRange() {
+  const range = document.createRange();
+  range.setStart(document.body || document.documentElement, 0);
+  range.collapse(true);
+  return range;
+}
+
+/**
+ * Create the popup for a term, ask the background script for its meaning
+ * and render the answer as long as the popup is still open.
+ *
+ * @param info {{word: string, range: Range, clientX: number, clientY: number}}
+ * @param parentId {string} The id of the parent popup, else "" for root popup.
+ */
+function runLookup(info, parentId) {
   loadPopupAssets()
     .then((assets) => {
       const createdDiv = createDiv(info, parentId, assets);
@@ -250,6 +293,13 @@ document.addEventListener("dblclick", (e) => {
     (typeof e[`${TRIGGER_KEY}Key`] === "boolean" && e[`${TRIGGER_KEY}Key`])
   ) {
     openModal(e);
+  }
+});
+
+// Context-menu lookups arrive from the background script.
+browser.runtime.onMessage.addListener((request) => {
+  if (request?.type === "contextLookup") {
+    openModalAtPoint(request.word, request.x, request.y);
   }
 });
 

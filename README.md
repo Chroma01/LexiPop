@@ -23,6 +23,10 @@ launches Firefox with the extension and auto-reloads on save.
 
 - **Instant lookups**: double-click any word to get a popup with up to five definitions, grouped by part of speech,
   with example sentences where available.
+- **Right-click lookup**: select a word and pick "Look up … in LexiPop" in the context menu — same popup, right where
+  the word is.
+- **Toolbar search**: click the LexiPop toolbar button to open a search box next to the address bar and type any word;
+  results appear as you type.
 - **Pronunciation**: phonetic transcription plus a speaker icon that plays a recorded pronunciation, falling back to
   your browser's text-to-speech when no recording exists.
 - **Nested lookups**: double-click a word _inside_ a popup to look that up too.
@@ -34,7 +38,8 @@ launches Firefox with the extension and auto-reloads on save.
 
 ## Usage
 
-1. Double-click a word on any page (holding your configured trigger key, if set).
+1. Double-click a word on any page (holding your configured trigger key, if set) — or select a word, right-click and
+   choose "Look up … in LexiPop". You can also click the toolbar button and type a word into the search box.
 2. Click the speaker icon to hear the word, or "Learn more »" for a full search.
 3. Click anywhere outside the popup, or its × button, to dismiss it.
 
@@ -68,7 +73,7 @@ git clone https://github.com/Chroma01/LexiPop.git
 cd LexiPop
 npm install          # installs devDependencies (web-ext, eslint, prettier, @floating-ui/*)
 npm run vendor       # copies the pinned floating-ui 1.8.0 UMD bundles into content/vendor/
-npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.1.4.zip
+npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.2.0.zip
 ```
 
 `npm run build` already invokes the vendor step, so the minimal path is just
@@ -128,4 +133,4 @@ This add-on is signed via AMO _self-distribution_ (unlisted). Publishing a new v
 6. Point `update.json` at the new release asset and push — Firefox picks the update up automatically.
 
 Signed releases live in the GitHub Releases section; the current signed
-build is the v3.1.4 release asset (Wiktionary fallback backend).
+build is the v3.2.0 release asset (context menu + toolbar search).
