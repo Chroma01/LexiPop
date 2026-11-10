@@ -28,12 +28,19 @@
 
 html {
   width: 360px;
+  /* the action-popup panel can hand back a viewport a few px narrower
+     than requested (panel borders/notch); max-width lets the layout
+     shrink to what the panel actually gives instead of spilling right */
+  max-width: 100%;
   overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  width: 100%;
+  /* auto (not 100%) for the same reason as #search: padding is absorbed
+     into the total width, so the panel background can never spill past
+     the 360px column */
+  width: auto;
   background: var(--popup-bg);
   color: var(--popup-text);
   font-family:
@@ -49,6 +56,7 @@ body {
 
 #search {
   display: block;
+  box-sizing: border-box;
   width: 100%;
   margin: 0;
   padding: 9px 12px;
