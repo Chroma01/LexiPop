@@ -30,10 +30,12 @@
 
 html {
   width: 360px;
-  /* the action-popup panel can hand back a viewport a few px narrower
-     than requested (panel borders/notch); max-width lets the layout
-     shrink to what the panel actually gives instead of spilling right */
-  max-width: 100%;
+  /* NO max-width on the root element: Firefox negotiates the action
+     panel width from the root's FIXED width. A percentage max-width
+     makes the preferred width indeterminate and the panel falls back
+     to its huge default (~950px), painting dead canvas to the right
+     of the real 360px body (v3.2.3/v3.2.4 "empty space" bug). The few
+     px a narrower panel takes away are absorbed by body { width:auto }. */
   overflow-x: hidden;
 }
 
