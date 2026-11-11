@@ -16,13 +16,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --popup-bg: #101418;
+    /* lighter than the near-black dark sites so the panel never
+       dissolves into the page behind it (v3.2.3 invisible-edge bug) */
+    --popup-bg: #171d26;
     --popup-text: #f8f9fa;
     --popup-muted: #adb5bd;
-    --popup-border: #444;
+    --popup-border: #4d5866;
     --popup-accent: #6c9fff;
     --audio-color: #adb5bd;
-    --field-bg: #1a1f24;
+    --field-bg: #10151c;
   }
 }
 
@@ -52,6 +54,11 @@ body {
   font-size: 14px;
   line-height: 1.5;
   padding: 12px 14px 14px;
+  /* action popups are flat rectangles without panel chrome: when the
+     page behind happens to share our background the edge disappears
+     and the panel looks enormous and half-empty. An inset 1px ring
+     marks the real box on any site without touching layout. */
+  box-shadow: inset 0 0 0 1px var(--popup-border);
 }
 
 #search {
