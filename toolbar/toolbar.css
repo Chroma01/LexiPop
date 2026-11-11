@@ -153,6 +153,11 @@ body {
 .pronunciation {
   color: var(--popup-muted);
   font-size: 13px;
+  /* IPA strings can contain long unbreakable runs; an unwrapped token
+     grows document.scrollWidth, and Firefox WIDENS the action panel to
+     scrollWidth while body stays 360 -> dead space on the right. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .audio {
@@ -244,6 +249,7 @@ body {
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 .learn-more:hover {
