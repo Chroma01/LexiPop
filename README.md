@@ -134,6 +134,6 @@ This add-on is signed via AMO _self-distribution_ (unlisted). Publishing a new v
 
 Signed releases live in the GitHub Releases section; the current signed
 build is the v3.2.7 release asset (the toolbar popup sizes itself the way
-Firefox's Proton panels demand: a fixed width on `body`, never on `:root`
+Firefox's Nova (2026) panels demand: a fixed width on `body`, never on `:root`
 — the documented popup-sizing pattern — so dictionary text can no longer
 balloon the panel and leave dead space).
