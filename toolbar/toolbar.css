@@ -29,22 +29,25 @@
 }
 
 html {
-  width: 360px;
-  /* NO max-width on the root element: Firefox negotiates the action
-     panel width from the root's FIXED width. A percentage max-width
-     makes the preferred width indeterminate and the panel falls back
-     to its huge default (~950px), painting dead canvas to the right
-     of the real 360px body (v3.2.3/v3.2.4 "empty space" bug). The few
-     px a narrower panel takes away are absorbed by body { width:auto }. */
+  /* Firefox measures the action-panel width from the PREFERRED width of
+     html's CONTENTS (toolkit ext-browser-content.js ->
+     getContentSizeConstrained, Bugzilla 1671778). A width set on :root
+     does NOT clamp that measurement — unwrapped dictionary text wins and
+     the panel balloons (~950px) with dead canvas beside the real 360px
+     column. The documented fix (MDN "Popups > Popup resizing"): fixed
+     width on BODY, never on :root. */
   overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  /* auto (not 100%) for the same reason as #search: padding is absorbed
-     into the total width, so the panel background can never spill past
-     the 360px column */
-  width: auto;
+  /* The width Firefox actually measures: a fixed border-box body width
+     makes the document's preferred width 360px regardless of the
+     dictionary text inside it, so the action panel comes up exactly
+     360px wide. MDN documents this as THE popup sizing pattern; html /
+     :root widths are ignored by the panel size measurement. */
+  width: 360px;
+  box-sizing: border-box;
   background: var(--popup-bg);
   color: var(--popup-text);
   font-family:
