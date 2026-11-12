@@ -260,6 +260,38 @@ function capitalize(text) {
 }
 
 /**
+ * Flatten one sense list into {text, example} entries. An entry that
+ * introduces a nested list ("Of or having a pole or polarity, as:")
+ * keeps its own text, and its nested field-specific senses
+ * ("(geography) Of, relating to...") become separate entries instead of
+ * merging into one unreadable wall (the "polar" adjective has six of
+ * them under a single list item). Quotations (dl/ul) and template
+ * styling stay stripped; the inline usage example is returned in its
+ * own field rather than repeated inside the definition text.
+ */
+function flattenSenses(listEl) {
+  const out = [];
+  for (const li of Array.from(listEl.children)) {
+    if (li.tagName !== "LI") continue;
+    const clone = li.cloneNode(true);
+    clone
+      .querySelectorAll("dl, ul, style, script")
+      .forEach((el) => el.remove());
+    const exDiv = clone.querySelector(".h-usage-example");
+    const example = exDiv
+      ? exDiv.textContent.replace(/\s+/g, " ").trim()
+      : null;
+    clone.querySelectorAll(".h-usage-example").forEach((el) => el.remove());
+    const nested = Array.from(clone.querySelectorAll(":scope > ol"));
+    nested.forEach((el) => el.remove());
+    const text = clone.textContent.replace(/\s+/g, " ").trim();
+    if (text) out.push({ text, example });
+    for (const ol of nested) out.push(...flattenSenses(ol));
+  }
+  return out;
+}
+
+/**
  * Parse an English Wiktionary page. Wiktionary is the primary dictionary:
  * unlike search-engine dictionary cards it renders a stable,
  * semantic HTML structure (Wikimedia markup) for essentially every English
@@ -341,26 +373,14 @@ function parseWiktionary(html, term) {
     const list = wrap.querySelector("ol") || wrap.querySelector("ul");
     if (!list) continue;
 
-    for (const li of list.children) {
-      if (li.tagName !== "LI") continue;
-      const exDiv = li.querySelector(".h-usage-example");
-      const example = exDiv
-        ? exDiv.textContent.replace(/\s+/g, " ").trim()
-        : null;
-      // Nested <dl>s carry examples/synonyms/translations and nested
-      // <ul>s carry citations (source + quotation blocks); neither is
-      // part of the definition itself.
-      const clone = li.cloneNode(true);
-      clone.querySelectorAll("dl, ul").forEach((el) => el.remove());
-      clone.querySelectorAll("style, script").forEach((el) => el.remove());
-      const definition = clone.textContent.replace(/\s+/g, " ").trim();
-      if (!definition) continue;
+    const senses = flattenSenses(list);
+    for (const sense of senses) {
+      if (meanings.length >= MAX_DEFINITIONS) break;
       meanings.push({
         partOfSpeech,
-        definition: capitalize(definition),
-        example,
+        definition: capitalize(sense.text),
+        example: sense.example,
       });
-      if (meanings.length >= MAX_DEFINITIONS) break;
     }
     if (meanings.length >= MAX_DEFINITIONS) break;
   }
