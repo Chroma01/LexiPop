@@ -496,6 +496,12 @@ function appendToDiv(createdDiv, content) {
     }
     createdDiv.definitions.appendChild(item);
   }
+  if (content.moreCount > 0) {
+    const more = document.createElement("li");
+    more.className = "more-count";
+    more.textContent = `+ ${content.moreCount} more definitions on Wiktionary`;
+    createdDiv.definitions.appendChild(more);
+  }
   createdDiv.definitions.hidden = false;
   createdDiv.moreInfo.hidden = false;
 

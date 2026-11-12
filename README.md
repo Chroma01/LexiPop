@@ -21,8 +21,9 @@ launches Firefox with the extension and auto-reloads on save.
 
 ## Features
 
-- **Instant lookups**: double-click any word to get a popup with up to five definitions, grouped by part of speech,
-  with example sentences where available.
+- **Instant lookups**: double-click any word to get a popup with up to eight definitions per part of speech
+  (twenty in total), grouped by part of speech, with example sentences where available. Longer entries — "run"
+  carries a hundred senses — say so with a "+N more definitions" note instead of hiding senses silently.
 - **Headword resolution**: an inflected form whose Wiktionary page only declares its base form ("ran" → "run")
   shows the base form's entry, with a note naming the declared relationship.
 - **Right-click lookup**: select a word and pick "Look up … in LexiPop" in the context menu — same popup, right where

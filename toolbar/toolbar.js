@@ -56,7 +56,7 @@ function clearResult() {
 /**
  * Render a meaning object from the background script into the panel.
  *
- * @param content {{word: string, phoneticText: ?string, audioSrc: ?string, meanings: Array, resolved: ?{from: string, via: string}}}
+ * @param content {{word: string, phoneticText: ?string, audioSrc: ?string, meanings: Array, moreCount: number, resolved: ?{from: string, via: string}}}
  */
 function render(content) {
   LAST_CONTENT = content;
@@ -92,6 +92,12 @@ function render(content) {
     }
 
     definitionsEl.appendChild(li);
+  }
+  if (content.moreCount > 0) {
+    const more = document.createElement("li");
+    more.className = "more-count";
+    more.textContent = `+ ${content.moreCount} more definitions on Wiktionary`;
+    definitionsEl.appendChild(more);
   }
   definitionsEl.hidden = false;
 

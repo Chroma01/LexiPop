@@ -1,4 +1,14 @@
 const DEFAULT_HISTORY_SETTING = { enabled: true };
+// Sense caps are measured from live Wiktionary data (v3.4.2): 8 senses per
+// part of speech keeps one big POS from starving the others — Wiktionary
+// orders sections by etymology, and "polar"'s seven adjective senses used to
+// leave zero room for its noun sense — and 20 total keeps monster entries
+// ("run" has 100 flattened senses) inside one comfortable popup scroll.
+// Truncated lookups say so with a "+N more definitions" line.
+const MAX_SENSES_PER_POS = 8;
+const MAX_SENSES_TOTAL = 20;
+// The dictionaryapi.dev fallback (only used when Wiktionary misses a page
+// entirely) keeps the old short list; its definition stream is noisier.
 const MAX_DEFINITIONS = 5;
 const WIKTIONARY_TIMEOUT_MS = 6000;
 const API_TIMEOUT_MS = 4000;
@@ -356,6 +366,9 @@ function parseWiktionary(html, term) {
   ]);
 
   const meanings = [];
+  // Total senses the page offers (before caps) so the UI can state
+  // honestly how many are hidden behind the "+N more" line.
+  let available = 0;
   for (const heading of container.querySelectorAll(".mw-heading")) {
     const h = heading.querySelector("h2, h3, h4");
     if (!h) continue;
@@ -374,39 +387,46 @@ function parseWiktionary(html, term) {
     if (!list) continue;
 
     const senses = flattenSenses(list);
+    available += senses.length;
+    let inPos = 0;
     for (const sense of senses) {
-      if (meanings.length >= MAX_DEFINITIONS) break;
+      if (meanings.length >= MAX_SENSES_TOTAL) break;
+      if (inPos >= MAX_SENSES_PER_POS) break;
       meanings.push({
         partOfSpeech,
         definition: capitalize(sense.text),
         example: sense.example,
       });
+      inPos++;
     }
-    if (meanings.length >= MAX_DEFINITIONS) break;
   }
   if (!meanings.length) return null;
 
-  return { word: term, phoneticText, audioSrc, meanings };
+  const moreCount = Math.max(0, available - meanings.length);
+  return { word: term, phoneticText, audioSrc, meanings, moreCount };
 }
 
 /**
  * Collect up to MAX_DEFINITIONS definitions across all entries of a
- * dictionaryapi.dev response, preserving part of speech and example.
+ * dictionaryapi.dev response, preserving part of speech and example;
+ * moreCount reports how many the noise-prone stream dropped.
  */
 function collectMeanings(entries) {
-  return entries
-    .flatMap((entry) =>
-      (entry.meanings ?? []).flatMap((meaning) =>
-        (meaning.definitions ?? [])
-          .filter((definition) => definition.definition)
-          .map((definition) => ({
-            partOfSpeech: meaning.partOfSpeech || "",
-            definition: capitalize(definition.definition),
-            example: definition.example || null,
-          })),
-      ),
-    )
-    .slice(0, MAX_DEFINITIONS);
+  const all = entries.flatMap((entry) =>
+    (entry.meanings ?? []).flatMap((meaning) =>
+      (meaning.definitions ?? [])
+        .filter((definition) => definition.definition)
+        .map((definition) => ({
+          partOfSpeech: meaning.partOfSpeech || "",
+          definition: capitalize(definition.definition),
+          example: definition.example || null,
+        })),
+    ),
+  );
+  return {
+    meanings: all.slice(0, MAX_DEFINITIONS),
+    moreCount: Math.max(0, all.length - MAX_DEFINITIONS),
+  };
 }
 
 /**
@@ -436,7 +456,7 @@ function parseDictionaryApiResponse(json, term) {
     return null;
   }
 
-  const meanings = collectMeanings(json);
+  const { meanings, moreCount } = collectMeanings(json);
   if (!meanings.length) {
     return null;
   }
@@ -445,6 +465,7 @@ function parseDictionaryApiResponse(json, term) {
     word: json[0].word || term,
     ...findPhonetics(json),
     meanings,
+    moreCount,
   };
 }
 

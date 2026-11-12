@@ -212,3 +212,9 @@
 .learn-more[hidden] {
   display: none;
 }
+
+.more-count {
+  color: var(--popup-muted);
+  font-size: 13px;
+  font-style: italic;
+}
