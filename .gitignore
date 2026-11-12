@@ -8,3 +8,4 @@ clean.xpi
 
 # AMO developer API key (JWT issuer + secret), see .env
 .env
+*.log
