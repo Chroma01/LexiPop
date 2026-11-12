@@ -14,9 +14,9 @@
 
   <!-- L headword inside the card -->
   <path fill="#0D2F86" d="M3 3 H6 V8 H9.5 V11 H3 Z"/>
-  <!-- definition lines inside the card -->
+  <!-- definition lines inside the card (bottom line keeps a 1px gap above the L foot at y=8) -->
   <g fill="#A8C4FF">
     <rect x="7.5" y="3.5" width="5" height="1" rx="0.5"/>
-    <rect x="7.5" y="7" width="4" height="1" rx="0.5"/>
+    <rect x="7.5" y="6" width="4" height="1" rx="0.5"/>
   </g>
 </svg>

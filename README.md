@@ -73,7 +73,7 @@ git clone https://github.com/Chroma01/LexiPop.git
 cd LexiPop
 npm install          # installs devDependencies (web-ext, eslint, prettier, @floating-ui/*)
 npm run vendor       # copies the pinned floating-ui 1.8.0 UMD bundles into content/vendor/
-npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.2.7.zip
+npm run build        # runs vendor, then packages web-ext-artifacts/lexipop-3.2.8.zip
 ```
 
 `npm run build` already invokes the vendor step, so the minimal path is just
@@ -133,7 +133,7 @@ This add-on is signed via AMO _self-distribution_ (unlisted). Publishing a new v
 6. Point `update.json` at the new release asset and push — Firefox picks the update up automatically.
 
 Signed releases live in the GitHub Releases section; the current signed
-build is the v3.2.7 release asset (the toolbar popup sizes itself the way
-Firefox's Nova (2026) panels demand: a fixed width on `body`, never on `:root`
-— the documented popup-sizing pattern — so dictionary text can no longer
-balloon the panel and leave dead space).
+build is the v3.2.8 release asset (the toolbar popup keeps the Nova panel
+sizing contract — a fixed width on `body`, never on `:root` — and the 16 px
+icon now keeps a real white gap between the lower definition line and the
+L foot, so they no longer fuse into one blob at toolbar sizes).
