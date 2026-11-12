@@ -5,5 +5,6 @@ export default {
     "README.md",
     "web-ext.config.mjs",
     "eslint.config.mjs",
+    "*.log",
   ],
 };

@@ -82,6 +82,14 @@
   font-size: 13px;
 }
 
+/* Inflection-resolution note, e.g. "ran → simple past of run". Long
+   tokens must wrap or they widen scrollWidth (v3.2.7 lesson). */
+.resolved {
+  color: var(--popup-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .close-btn {
   all: initial;
   cursor: pointer;

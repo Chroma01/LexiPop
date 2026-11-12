@@ -163,6 +163,15 @@ body {
   min-width: 0;
 }
 
+/* Inflection-resolution note, e.g. "ran → simple past of run". Must
+   wrap for the same scrollWidth reason as .pronunciation. */
+.resolved {
+  color: var(--popup-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
 .audio {
   all: initial;
   display: inline-flex;

@@ -5,6 +5,7 @@ const searchEl = document.getElementById("search");
 const resultEl = document.getElementById("result");
 const hintEl = document.getElementById("hint");
 const headingEl = resultEl.querySelector(".heading");
+const resolvedEl = resultEl.querySelector(".resolved");
 const pronunciationEl = resultEl.querySelector(".pronunciation");
 const statusEl = resultEl.querySelector(".status");
 const definitionsEl = resultEl.querySelector(".definitions");
@@ -42,6 +43,7 @@ function showStatus(text, loading) {
 function clearResult() {
   resultEl.hidden = true;
   headingEl.textContent = "";
+  resolvedEl.hidden = true;
   pronunciationEl.textContent = "";
   definitionsEl.textContent = "";
   definitionsEl.hidden = true;
@@ -54,7 +56,7 @@ function clearResult() {
 /**
  * Render a meaning object from the background script into the panel.
  *
- * @param content {{word: string, phoneticText: string, audioSrc: string, meanings: Array, sourceUrl: string, license: string}}
+ * @param content {{word: string, phoneticText: ?string, audioSrc: ?string, meanings: Array, resolved: ?{from: string, via: string}}}
  */
 function render(content) {
   LAST_CONTENT = content;
@@ -62,6 +64,12 @@ function render(content) {
   resultEl.hidden = false;
   statusEl.hidden = true;
   headingEl.textContent = content.word;
+  if (content.resolved) {
+    resolvedEl.textContent = `${content.resolved.from} → ${content.resolved.via}`;
+    resolvedEl.hidden = false;
+  } else {
+    resolvedEl.hidden = true;
+  }
   pronunciationEl.textContent = content.phoneticText || "";
 
   definitionsEl.textContent = "";

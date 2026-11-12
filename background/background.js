@@ -1,9 +1,14 @@
 const DEFAULT_HISTORY_SETTING = { enabled: true };
 const MAX_DEFINITIONS = 5;
-const PRIMARY_TIMEOUT_MS = 4000;
-const FALLBACK_TIMEOUT_MS = 6000;
-// Primary gets a PRIMARY_PRIORITY_MS headstart as its answers are more complete
-const PRIMARY_PRIORITY_MS = 800;
+const WIKTIONARY_TIMEOUT_MS = 6000;
+const API_TIMEOUT_MS = 4000;
+// Wiktionary is the primary source: Wikimedia hosting, curated entries, and
+// recorded pronunciations on the page itself. dictionaryapi.dev answers the
+// same lookup in parallel; its role is to fill in a missing IPA
+// transcription or recording and to carry the lookup when Wiktionary misses
+// entirely. On its bad days (Cloudflare 522 stalls) the merge waits at most
+// AUDIO_MERGE_MS past the Wiktionary answer.
+const AUDIO_MERGE_MS = 1500;
 
 const ACTIVE_REQUESTS = new Map();
 
@@ -50,19 +55,19 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const controllers = {};
   if (requestId) {
     ACTIVE_REQUESTS.set(requestId, () => {
-      controllers.primary?.abort();
-      controllers.fallback?.abort();
+      controllers.api?.abort();
+      controllers.wiktionary?.abort();
     });
   }
 
-  const primary = () => {
+  const apiLookup = () => {
     if (!langNorm.startsWith("en")) return Promise.resolve(null);
     const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`;
     // dictionaryapi.dev's origin occasionally stalls (Cloudflare 522) without
     // ever rejecting the fetch
     const controller = new AbortController();
-    controllers.primary = controller;
-    const timer = setTimeout(() => controller.abort(), PRIMARY_TIMEOUT_MS);
+    controllers.api = controller;
+    const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
     return fetch(url, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : Promise.resolve(null)))
       .then((json) => parseDictionaryApiResponse(json, term))
@@ -70,11 +75,10 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .finally(() => clearTimeout(timer));
   };
 
-  const fallback = () => {
-    console.log("Falling back to Wiktionary lookup");
+  const wiktionaryLookup = () => {
     const controller = new AbortController();
-    controllers.fallback = controller;
-    const timer = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT_MS);
+    controllers.wiktionary = controller;
+    const timer = setTimeout(() => controller.abort(), WIKTIONARY_TIMEOUT_MS);
     // Wiktionary titles are case-sensitive and most lemmas are
     // lowercase, so try the term as typed first (keeps proper nouns like
     // "London" working), then with the first letter lowercased
@@ -82,49 +86,59 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const candidates = [term];
     const lowered = term.charAt(0).toLowerCase() + term.slice(1);
     if (lowered !== term) candidates.push(lowered);
+
+    const fetchParse = async (title) => {
+      const url = `https://en.wiktionary.org/wiki/${encodeURIComponent(title)}`;
+      try {
+        const r = await fetch(url, { signal: controller.signal });
+        if (!r.ok) return null;
+        return parseWiktionary(await r.text(), term);
+      } catch {
+        return null;
+      }
+    };
+
     const run = (async () => {
       for (const candidate of candidates) {
-        const url = `https://en.wiktionary.org/wiki/${encodeURIComponent(candidate)}`;
-        try {
-          const r = await fetch(url, { signal: controller.signal });
-          if (!r.ok) continue;
-          const html = await r.text();
-          const content = parseWiktionary(html, term);
-          if (content) return content;
-        } catch {
-          if (controller.signal.aborted) return null;
-        }
+        const content = await fetchParse(candidate);
+        if (!content) continue;
+        if (controller.signal.aborted) return null;
+
+        // Inflected forms get their own Wiktionary pages that only declare
+        // the form ("plural of cat", "simple past of run") instead of
+        // defining it. When those declarations outnumber the page's real
+        // senses, follow the headword the page itself names: one hop, no
+        // stemming, no guessing.
+        const pointer = headwordPointer(content);
+        if (!pointer || pointer.target === candidate) return content;
+        const target = await fetchParse(pointer.target);
+        if (!target) return content;
+        target.word = pointer.target;
+        target.resolved = { from: term, via: pointer.text };
+        return target;
       }
       return null;
     })();
     return run.finally(() => clearTimeout(timer));
   };
 
-  const resolveContent = () => {
-    const primaryPromise = primary();
-
-    let fireFallback;
-    const headstart = new Promise((resolve) => {
-      const timer = setTimeout(resolve, PRIMARY_PRIORITY_MS);
-      fireFallback = () => {
-        clearTimeout(timer);
-        resolve();
-      };
-    });
-    primaryPromise.then((content) => {
-      if (!content) fireFallback();
-    });
-    const fallbackPromise = headstart.then(fallback);
-
-    return Promise.race([
-      primaryPromise.then((content) => ({ source: "primary", content })),
-      fallbackPromise.then((content) => ({ source: "fallback", content })),
-    ]).then((first) => {
-      // Whichever answers first wins, unless it came back empty, then wait
-      // for the other one.
-      if (first.content) return first.content;
-      return first.source === "primary" ? fallbackPromise : primaryPromise;
-    });
+  const resolveContent = async () => {
+    const apiPromise = apiLookup();
+    const content = await wiktionaryLookup();
+    if (!content) return apiPromise;
+    if (!content.phoneticText || !content.audioSrc) {
+      const api = await Promise.race([
+        apiPromise,
+        new Promise((resolve) =>
+          setTimeout(() => resolve(null), AUDIO_MERGE_MS),
+        ),
+      ]);
+      if (api) {
+        content.phoneticText ||= api.phoneticText;
+        content.audioSrc ||= api.audioSrc;
+      }
+    }
+    return content;
   };
 
   resolveContent()
@@ -147,13 +161,107 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
+/**
+ * Wiktionary declares inflected forms with lines assembled from fixed
+ * grammar terms: "Plural of cat", "Third-person singular simple present
+ * indicative of cat", "Simple past of run". A definition is a pointer
+ * when every word before " of " is such a term; qualifiers like
+ * "(nonstandard, colloquial)" or ordinary sentence words break the chain,
+ * so real definitions are never mistaken for pointers. The headword is
+ * read from the declaration itself instead of guessed by a stemmer:
+ * "king" is never stripped to "kin".
+ */
+const POINTER_TERMS = new Set([
+  "the",
+  "first",
+  "second",
+  "third",
+  "person",
+  "singular",
+  "plural",
+  "simple",
+  "past",
+  "present",
+  "continuous",
+  "perfect",
+  "progressive",
+  "indicative",
+  "subjunctive",
+  "conditional",
+  "imperative",
+  "infinitive",
+  "participle",
+  "gerund",
+  "comparative",
+  "superlative",
+  "more",
+  "most",
+  "alternative",
+  "obsolete",
+  "archaic",
+  "dated",
+  "historical",
+  "misspelling",
+  "capitalization",
+  "capitalisation",
+  "hyphenation",
+  "form",
+  "forms",
+  "spelling",
+  "spellings",
+  "degree",
+  "orthography",
+]);
+
+function pointerTarget(definition) {
+  // Leading "(nonstandard, colloquial)"-style qualifiers decorate pointer
+  // lines too; they are stripped before the grammar-term check.
+  const bare = definition.replace(/^(?:\s*\([^)]*\)\s*)+/, "");
+  const match = bare.match(/(.*?)\sof\s+(.+)/i);
+  if (!match) return null;
+  const terms = match[1]
+    .toLowerCase()
+    .split(/[\s,-]+/)
+    .filter(Boolean);
+  if (!terms.length || !terms.every((term) => POINTER_TERMS.has(term))) {
+    return null;
+  }
+  const target = match[2].trim().replace(/[.!]+$/, "");
+  return target.length && target.length <= 40 ? target : null;
+}
+
+/**
+ * A page is resolved to its headword only when pointer declarations
+ * outnumber real senses. "dogs" (one pointer, four slang senses) and
+ * "training" (one pointer, its own noun senses) keep their own pages,
+ * while "ran" (three pointers, one obscure nautical sense) follows "run".
+ */
+function headwordPointer(content) {
+  let pointers = 0;
+  let target = null;
+  let firstPointerText = null;
+  for (const { definition } of content.meanings) {
+    const captured = pointerTarget(definition);
+    if (!captured) continue;
+    pointers++;
+    target ||= captured;
+    firstPointerText ||= definition;
+  }
+  if (!target || pointers * 2 <= content.meanings.length) return null;
+  // Definitions are capitalized by the parser; pointer terms are lowercase.
+  return {
+    target,
+    text: firstPointerText.charAt(0).toLowerCase() + firstPointerText.slice(1),
+  };
+}
+
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /**
- * Parse an English Wiktionary page. Wiktionary is used as the fallback
- * dictionary: unlike search-engine dictionary cards it renders a stable,
+ * Parse an English Wiktionary page. Wiktionary is the primary dictionary:
+ * unlike search-engine dictionary cards it renders a stable,
  * semantic HTML structure (Wikimedia markup) for essentially every English
  * word, and provides IPA transcriptions, pronunciation audio, and
  * part-of-speech-grouped definitions.

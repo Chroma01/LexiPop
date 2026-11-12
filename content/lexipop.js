@@ -376,6 +376,7 @@ function createDiv(info, parentId, assets) {
   shadow.appendChild(assets.template.content.cloneNode(true));
 
   const headingEl = shadow.querySelector(".heading");
+  const resolvedEl = shadow.querySelector(".resolved");
   const pronunciationEl = shadow.querySelector(".pronunciation");
   const statusEl = shadow.querySelector(".status");
   const definitionsEl = shadow.querySelector(".definitions");
@@ -431,6 +432,7 @@ function createDiv(info, parentId, assets) {
   return {
     id: thisId,
     heading: headingEl,
+    resolved: resolvedEl,
     pronunciation: pronunciationEl,
     status: statusEl,
     definitions: definitionsEl,
@@ -466,6 +468,12 @@ function playPronunciation(word, audioSrc) {
 
 function appendToDiv(createdDiv, content) {
   createdDiv.heading.textContent = content.word;
+  if (content.resolved) {
+    createdDiv.resolved.textContent = `${content.resolved.from} → ${content.resolved.via}`;
+    createdDiv.resolved.hidden = false;
+    // Point the link at the headword page, not at the inflected form.
+    createdDiv.moreInfo.href = `https://en.wiktionary.org/wiki/${encodeURIComponent(content.word)}`;
+  }
   createdDiv.pronunciation.textContent = content.phoneticText || "";
 
   createdDiv.status.remove();
